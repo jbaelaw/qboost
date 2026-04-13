@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qboost"
+version = "0.1.0"
+description = "Quantum-Boost Encryption Toolkit - Hybrid classical + post-quantum cryptography"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.9"
+authors = [{ name = "QBoost Contributors" }]
+keywords = ["cryptography", "quantum", "post-quantum", "encryption", "hybrid", "kem"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security :: Cryptography",
+]
+dependencies = ["cryptography>=42.0.0"]
+
+[project.optional-dependencies]
+pq = ["oqs"]
+dev = ["pytest>=7.0", "pytest-cov"]
+
+[project.urls]
+Homepage = "https://github.com/baejiho/qboost"
+Repository = "https://github.com/baejiho/qboost"
+Issues = "https://github.com/baejiho/qboost/issues"
+
+[tool.setuptools.packages.find]
+include = ["qboost*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
