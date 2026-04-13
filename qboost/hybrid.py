@@ -37,7 +37,9 @@ MODE_CLASSICAL: int = 0x01
 MODE_HYBRID: int = 0x02
 
 _HKDF_INFO = b"qboost-hybrid-kem-v1"
+_HKDF_ENTROPY_INFO = b"qboost-entropy-wrap-v1"
 _X25519_PUB_LEN = 32
+_X25519_PRIV_LEN = 32
 
 
 def _hkdf_derive(ikm: bytes, length: int = 32) -> bytes:
@@ -46,6 +48,15 @@ def _hkdf_derive(ikm: bytes, length: int = 32) -> bytes:
         length=length,
         salt=None,
         info=_HKDF_INFO,
+    ).derive(ikm)
+
+
+def _hkdf_entropy_key(ikm: bytes, length: int = 32) -> bytes:
+    return HKDF(
+        algorithm=SHA256(),
+        length=length,
+        salt=None,
+        info=_HKDF_ENTROPY_INFO,
     ).derive(ikm)
 
 
@@ -67,6 +78,10 @@ class HybridPublicKey:
         if self.pq_public is not None:
             return bytes([MODE_HYBRID]) + x_pub + self.pq_public
         return bytes([MODE_CLASSICAL]) + x_pub
+
+    def __repr__(self) -> str:
+        mode = "hybrid" if self.pq_public is not None else "classical"
+        return f"HybridPublicKey(mode={mode})"
 
     @classmethod
     def deserialize(cls, data: bytes) -> HybridPublicKey:
@@ -100,6 +115,10 @@ class HybridPrivateKey:
     def mode(self) -> int:
         return MODE_HYBRID if self.pq_private is not None else MODE_CLASSICAL
 
+    def __repr__(self) -> str:
+        mode = "hybrid" if self.pq_private is not None else "classical"
+        return f"HybridPrivateKey(mode={mode})"
+
     def serialize(self) -> bytes:
         x_priv = self.classical_private.private_bytes(
             Encoding.Raw, PrivateFormat.Raw, NoEncryption()
@@ -111,14 +130,14 @@ class HybridPrivateKey:
 
     @classmethod
     def deserialize(cls, data: bytes) -> HybridPrivateKey:
-        if len(data) < 1 + _X25519_PUB_LEN:
+        if len(data) < 1 + _X25519_PRIV_LEN:
             raise QBoostError("Private key data too short")
 
         mode = data[0]
-        x_priv = X25519PrivateKey.from_private_bytes(data[1 : 1 + _X25519_PUB_LEN])
+        x_priv = X25519PrivateKey.from_private_bytes(data[1 : 1 + _X25519_PRIV_LEN])
 
         if mode == MODE_HYBRID:
-            rest = data[1 + _X25519_PUB_LEN :]
+            rest = data[1 + _X25519_PRIV_LEN :]
             if len(rest) < 2:
                 raise QBoostError("Missing PQ private key length")
             pq_len = struct.unpack(">H", rest[:2])[0]
@@ -192,8 +211,7 @@ class HybridKEM:
             ct = bytes([MODE_HYBRID]) + ephemeral_pub_bytes + pq_ct
         else:
             extra_entropy = os.urandom(32)
-            # receiver needs this to reconstruct the shared secret
-            classical_key = _hkdf_derive(classical_secret)
+            classical_key = _hkdf_entropy_key(classical_secret)
             encrypted_entropy = encrypt_with_key(extra_entropy, classical_key)
 
             shared_secret = _hkdf_derive(classical_secret + extra_entropy)
@@ -224,7 +242,7 @@ class HybridKEM:
             return _hkdf_derive(classical_secret + pq_secret)
 
         elif mode == MODE_CLASSICAL:
-            classical_key = _hkdf_derive(classical_secret)
+            classical_key = _hkdf_entropy_key(classical_secret)
             extra_entropy = decrypt_with_key(rest, classical_key)
             return _hkdf_derive(classical_secret + extra_entropy)
 

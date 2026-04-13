@@ -114,3 +114,22 @@ def test_short_ct():
     kp = generate_keypair()
     with pytest.raises(DecryptionError):
         decrypt(b"QB", kp)
+
+
+def test_encrypt_type_error():
+    kp = generate_keypair()
+    with pytest.raises(TypeError):
+        encrypt("not bytes", kp.public_key)
+
+
+def test_decrypt_type_error():
+    kp = generate_keypair()
+    with pytest.raises(TypeError):
+        decrypt("not bytes", kp)
+
+
+def test_symmetric_type_error():
+    with pytest.raises(TypeError):
+        encrypt_symmetric("not bytes", "pw")
+    with pytest.raises(TypeError):
+        decrypt_symmetric("not bytes", "pw")

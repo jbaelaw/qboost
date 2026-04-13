@@ -71,3 +71,10 @@ def test_unique_keys():
     kp1 = HybridKEM.generate_keypair()
     kp2 = HybridKEM.generate_keypair()
     assert kp1.public_key.serialize() != kp2.public_key.serialize()
+
+
+def test_repr():
+    kp = HybridKEM.generate_keypair()
+    assert "HybridPublicKey" in repr(kp.public_key)
+    assert "HybridPrivateKey" in repr(kp.private_key)
+    assert "classical" in repr(kp.public_key) or "hybrid" in repr(kp.public_key)

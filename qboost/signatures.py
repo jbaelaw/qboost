@@ -50,6 +50,10 @@ class SigningPublicKey:
     def mode(self) -> int:
         return MODE_HYBRID if self.pq_public is not None else MODE_CLASSICAL
 
+    def __repr__(self) -> str:
+        mode = "hybrid" if self.pq_public is not None else "classical"
+        return f"SigningPublicKey(mode={mode})"
+
     def serialize(self) -> bytes:
         ed_pub = self.classical_public.public_bytes(Encoding.Raw, PublicFormat.Raw)
         if self.pq_public is not None:
@@ -209,4 +213,7 @@ class HybridSigner:
             except Exception:
                 return False
 
-        return True
+        if mode == MODE_CLASSICAL and public_key.pq_public is not None:
+            return False
+
+        return mode == MODE_CLASSICAL

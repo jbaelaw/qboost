@@ -18,6 +18,8 @@ def encrypt(
     plaintext: bytes,
     recipient_public_key: QBoostPublicKey | bytes,
 ) -> bytes:
+    if not isinstance(plaintext, bytes):
+        raise TypeError("plaintext must be bytes")
     if isinstance(recipient_public_key, bytes):
         if recipient_public_key.startswith(b"QBOOST-PUB-V1\n"):
             pub = QBoostPublicKey.from_export(recipient_public_key)
@@ -37,6 +39,8 @@ def decrypt(
     ciphertext: bytes,
     private_key: QBoostKeyPair | HybridPrivateKey,
 ) -> bytes:
+    if not isinstance(ciphertext, bytes):
+        raise TypeError("ciphertext must be bytes")
     if len(ciphertext) < len(_MAGIC) + 2:
         raise DecryptionError("Ciphertext too short")
 
@@ -63,10 +67,14 @@ def decrypt(
 
 
 def encrypt_symmetric(plaintext: bytes, password: str) -> bytes:
+    if not isinstance(plaintext, bytes):
+        raise TypeError("plaintext must be bytes")
     return _sym_encrypt(plaintext, password)
 
 
 def decrypt_symmetric(ciphertext: bytes, password: str) -> bytes:
+    if not isinstance(ciphertext, bytes):
+        raise TypeError("ciphertext must be bytes")
     return _sym_decrypt(ciphertext, password)
 
 

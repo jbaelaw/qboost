@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 
-VERSION = "0.7.0"
+VERSION = "0.8.0"
 
 try:
     import oqs  # noqa: F401

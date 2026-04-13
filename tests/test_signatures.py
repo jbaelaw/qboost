@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from qboost.signatures import HybridSigner, SigningKeyPair, SigningPrivateKey, SigningPublicKey
+from qboost.signatures import (
+    HybridSigner,
+    MODE_CLASSICAL,
+    SigningKeyPair,
+    SigningPrivateKey,
+    SigningPublicKey,
+    _ED25519_SIG_LEN,
+)
 
 
 def test_keygen():
@@ -97,3 +104,16 @@ def test_different_sigs():
     sig1 = HybridSigner.sign(b"message1", kp.private_key)
     sig2 = HybridSigner.sign(b"message2", kp.private_key)
     assert sig1 != sig2
+
+
+def test_downgrade_rejected():
+    """Classical-mode signature must be rejected if public key has PQ data."""
+    kp = HybridSigner.generate_keypair()
+    msg = b"downgrade test"
+    sig = HybridSigner.sign(msg, kp.private_key)
+    forged = bytes([MODE_CLASSICAL]) + sig[1:1 + _ED25519_SIG_LEN]
+    pub = kp.public_key
+    if pub.pq_public is not None:
+        assert not HybridSigner.verify(msg, forged, pub)
+    else:
+        assert HybridSigner.verify(msg, forged, pub)

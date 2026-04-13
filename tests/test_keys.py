@@ -78,3 +78,32 @@ def test_key_id_stable():
     kp = QBoostKeyPair.generate()
     pub = kp.public_key
     assert pub.key_id == kp.key_id
+
+
+def test_repr():
+    kp = QBoostKeyPair.generate()
+    r = repr(kp)
+    assert "QBoostKeyPair" in r
+    assert kp.key_id in r
+
+    pr = repr(kp.public_key)
+    assert "QBoostPublicKey" in pr
+
+
+def test_export_import_encrypt_roundtrip():
+    """Exported and reimported keypair must be able to decrypt."""
+    kp = QBoostKeyPair.generate()
+    msg = b"roundtrip after export"
+
+    from qboost.core import encrypt, decrypt
+    ct = encrypt(msg, kp.public_key)
+
+    exported = kp.export_private_key("test-pw")
+    imported = QBoostKeyPair.from_private_key(exported, "test-pw")
+
+    pt = decrypt(ct, imported)
+    assert pt == msg
+
+    ct2 = encrypt(msg, imported.public_key)
+    pt2 = decrypt(ct2, kp)
+    assert pt2 == msg
