@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import hashlib
-import hmac
 import os
 
-VERSION = "0.1.0"
+VERSION = "0.7.0"
 
 try:
     import oqs  # noqa: F401
@@ -28,15 +27,6 @@ def shake256(data: bytes, length: int = 32) -> bytes:
 
 def sha3_256(data: bytes) -> bytes:
     return hashlib.sha3_256(data).digest()
-
-
-def constant_time_compare(a: bytes, b: bytes) -> bool:
-    return hmac.compare_digest(a, b)
-
-
-def combine_secrets(*secrets: bytes) -> bytes:
-    combined = b"qboost-combine-v1" + b"".join(secrets)
-    return shake256(combined, 32)
 
 
 class QBoostError(Exception):

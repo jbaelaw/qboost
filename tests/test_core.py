@@ -15,12 +15,12 @@ from qboost.keys import QBoostKeyPair, QBoostPublicKey
 from qboost.utils import DecryptionError, quantum_random
 
 
-def test_generate_keypair_returns_qboost_keypair():
+def test_keygen():
     kp = generate_keypair()
     assert isinstance(kp, QBoostKeyPair)
 
 
-def test_encrypt_decrypt_roundtrip_keypair():
+def test_roundtrip():
     kp = generate_keypair()
     plaintext = b"quantum secure message"
     ct = encrypt(plaintext, kp.public_key)
@@ -28,7 +28,7 @@ def test_encrypt_decrypt_roundtrip_keypair():
     assert result == plaintext
 
 
-def test_encrypt_decrypt_roundtrip_exported_keys():
+def test_roundtrip_exported():
     kp = generate_keypair()
     plaintext = b"exported key round trip"
 
@@ -41,7 +41,7 @@ def test_encrypt_decrypt_roundtrip_exported_keys():
     assert result == plaintext
 
 
-def test_encrypt_decrypt_with_serialized_pubkey():
+def test_roundtrip_serialized():
     kp = generate_keypair()
     plaintext = b"serialized key test"
 
@@ -51,7 +51,7 @@ def test_encrypt_decrypt_with_serialized_pubkey():
     assert result == plaintext
 
 
-def test_encrypt_symmetric_decrypt_symmetric_roundtrip():
+def test_symmetric():
     plaintext = b"symmetric test data"
     password = "sym-pass-123"
     ct = encrypt_symmetric(plaintext, password)
@@ -59,12 +59,12 @@ def test_encrypt_symmetric_decrypt_symmetric_roundtrip():
     assert result == plaintext
 
 
-def test_is_quantum_ready_returns_bool():
+def test_pq_ready():
     result = is_quantum_ready()
     assert isinstance(result, bool)
 
 
-def test_info_returns_dict_with_expected_keys():
+def test_info():
     result = info()
     assert isinstance(result, dict)
     expected_keys = {"version", "pq_available", "classical_kem", "pq_kem", "symmetric", "kdf"}
@@ -80,7 +80,7 @@ def test_info_values():
     assert isinstance(result["pq_available"], bool)
 
 
-def test_decrypt_with_wrong_key_fails():
+def test_wrong_key():
     kp1 = generate_keypair()
     kp2 = generate_keypair()
     plaintext = b"should not decrypt with wrong key"
@@ -89,7 +89,7 @@ def test_decrypt_with_wrong_key_fails():
         decrypt(ct, kp2)
 
 
-def test_large_data_encrypt_decrypt():
+def test_large():
     kp = generate_keypair()
     plaintext = quantum_random(1024 * 1024)  # 1MB
     ct = encrypt(plaintext, kp.public_key)
@@ -97,20 +97,20 @@ def test_large_data_encrypt_decrypt():
     assert result == plaintext
 
 
-def test_empty_plaintext_encrypt_decrypt():
+def test_empty():
     kp = generate_keypair()
     ct = encrypt(b"", kp.public_key)
     result = decrypt(ct, kp)
     assert result == b""
 
 
-def test_decrypt_invalid_header():
+def test_bad_header():
     kp = generate_keypair()
     with pytest.raises(DecryptionError):
         decrypt(b"INVALID" + b"\x00" * 100, kp)
 
 
-def test_decrypt_too_short():
+def test_short_ct():
     kp = generate_keypair()
     with pytest.raises(DecryptionError):
         decrypt(b"QB", kp)

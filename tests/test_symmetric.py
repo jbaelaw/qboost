@@ -6,7 +6,7 @@ from qboost.symmetric import decrypt, decrypt_with_key, derive_key, encrypt, enc
 from qboost.utils import DecryptionError, quantum_random
 
 
-def test_derive_key_returns_key_and_salt():
+def test_derive_key():
     key, salt = derive_key("password")
     assert isinstance(key, bytes)
     assert isinstance(salt, bytes)
@@ -14,24 +14,24 @@ def test_derive_key_returns_key_and_salt():
     assert len(salt) == 32
 
 
-def test_derive_key_deterministic_with_same_salt():
+def test_derive_key_deterministic():
     key1, salt = derive_key("password")
     key2, _ = derive_key("password", salt=salt)
     assert key1 == key2
 
 
-def test_derive_key_different_passwords():
+def test_derive_key_diff_pw():
     key1, salt = derive_key("password1")
     key2, _ = derive_key("password2", salt=salt)
     assert key1 != key2
 
 
-def test_derive_key_custom_length():
+def test_derive_key_len():
     key, _ = derive_key("password", key_length=64)
     assert len(key) == 64
 
 
-def test_encrypt_decrypt_roundtrip_password():
+def test_roundtrip_pw():
     plaintext = b"hello quantum world"
     password = "strong-password-123"
     ct = encrypt(plaintext, password)
@@ -39,7 +39,7 @@ def test_encrypt_decrypt_roundtrip_password():
     assert result == plaintext
 
 
-def test_encrypt_with_key_decrypt_with_key_roundtrip():
+def test_roundtrip_key():
     key = quantum_random(32)
     plaintext = b"key-based encryption test"
     ct = encrypt_with_key(plaintext, key)
@@ -47,14 +47,14 @@ def test_encrypt_with_key_decrypt_with_key_roundtrip():
     assert result == plaintext
 
 
-def test_decrypt_wrong_password_raises():
+def test_wrong_pw():
     plaintext = b"secret data"
     ct = encrypt(plaintext, "correct-password")
     with pytest.raises(DecryptionError):
         decrypt(ct, "wrong-password")
 
 
-def test_decrypt_with_wrong_key_raises():
+def test_wrong_key():
     key = quantum_random(32)
     wrong_key = quantum_random(32)
     plaintext = b"secret data"
@@ -63,21 +63,21 @@ def test_decrypt_with_wrong_key_raises():
         decrypt_with_key(ct, wrong_key)
 
 
-def test_empty_plaintext_roundtrip():
+def test_empty_pw():
     password = "password"
     ct = encrypt(b"", password)
     result = decrypt(ct, password)
     assert result == b""
 
 
-def test_empty_plaintext_with_key_roundtrip():
+def test_empty_key():
     key = quantum_random(32)
     ct = encrypt_with_key(b"", key)
     result = decrypt_with_key(ct, key)
     assert result == b""
 
 
-def test_large_data_encrypt_decrypt():
+def test_large_pw():
     plaintext = quantum_random(1024 * 1024)  # 1MB
     password = "large-data-password"
     ct = encrypt(plaintext, password)
@@ -85,7 +85,7 @@ def test_large_data_encrypt_decrypt():
     assert result == plaintext
 
 
-def test_large_data_with_key():
+def test_large_key():
     key = quantum_random(32)
     plaintext = quantum_random(1024 * 1024)
     ct = encrypt_with_key(plaintext, key)
@@ -93,7 +93,7 @@ def test_large_data_with_key():
     assert result == plaintext
 
 
-def test_ciphertext_tampering_detected():
+def test_tamper_pw():
     password = "password"
     ct = bytearray(encrypt(b"sensitive", password))
     ct[-1] ^= 0xFF
@@ -101,7 +101,7 @@ def test_ciphertext_tampering_detected():
         decrypt(bytes(ct), password)
 
 
-def test_ciphertext_tampering_with_key():
+def test_tamper_key():
     key = quantum_random(32)
     ct = bytearray(encrypt_with_key(b"sensitive", key))
     ct[-1] ^= 0xFF
@@ -109,16 +109,16 @@ def test_ciphertext_tampering_with_key():
         decrypt_with_key(bytes(ct), key)
 
 
-def test_encrypt_with_key_wrong_key_length():
+def test_bad_key_len_enc():
     with pytest.raises(ValueError):
         encrypt_with_key(b"data", b"short")
 
 
-def test_decrypt_with_key_wrong_key_length():
+def test_bad_key_len_dec():
     with pytest.raises(ValueError):
         decrypt_with_key(b"data" * 10, b"short")
 
 
-def test_decrypt_ciphertext_too_short():
+def test_short_ct():
     with pytest.raises(DecryptionError):
         decrypt(b"short", "password")

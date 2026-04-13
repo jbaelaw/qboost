@@ -145,7 +145,6 @@ class SigningKeyPair:
 
 
 class HybridSigner:
-    """Hybrid signature scheme: Ed25519 + optional ML-DSA-65."""
 
     @staticmethod
     def generate_keypair() -> SigningKeyPair:
@@ -164,10 +163,7 @@ class HybridSigner:
 
     @staticmethod
     def sign(message: bytes, private_key: SigningPrivateKey) -> bytes:
-        """Sign a message. Returns combined signature.
-
-        Format: [mode:1][ed25519_sig:64][pq_sig:variable if hybrid]
-        """
+        """Format: [mode:1][ed25519_sig:64][pq_sig_if_hybrid]"""
         ed_sig = private_key.classical_private.sign(message)
 
         if (
@@ -185,7 +181,6 @@ class HybridSigner:
     def verify(
         message: bytes, signature: bytes, public_key: SigningPublicKey
     ) -> bool:
-        """Verify a signature. Returns True if valid."""
         if len(signature) < 1 + _ED25519_SIG_LEN:
             return False
 

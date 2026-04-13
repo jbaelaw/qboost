@@ -93,13 +93,8 @@ class QBoostKeyPair:
 
         hybrid_priv = HybridPrivateKey.deserialize(raw)
 
-        # Reconstruct the public key from the private key
         classical_pub = hybrid_priv.classical_private.public_key()
-        pq_pub: bytes | None = None
-        # PQ public key cannot be derived from private key alone;
-        # we store only the private side in classical-only mode.
-        # For hybrid mode, the keypair should be regenerated or
-        # the public key exported separately.
+        pq_pub: bytes | None = None  # TODO: PQ pubkey not recoverable from secret key
 
         hybrid_kp = HybridKeyPair(
             hybrid_priv.classical_private,

@@ -192,8 +192,7 @@ class HybridKEM:
             ct = bytes([MODE_HYBRID]) + ephemeral_pub_bytes + pq_ct
         else:
             extra_entropy = os.urandom(32)
-            # Encrypt the extra entropy under the classical shared secret
-            # so the receiver can recover it deterministically
+            # receiver needs this to reconstruct the shared secret
             classical_key = _hkdf_derive(classical_secret)
             encrypted_entropy = encrypt_with_key(extra_entropy, classical_key)
 

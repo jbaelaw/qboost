@@ -1,4 +1,4 @@
-"""QBoost - Quantum-Boost Encryption Toolkit"""
+"""qboost"""
 from __future__ import annotations
 
 from .core import (

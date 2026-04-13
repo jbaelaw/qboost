@@ -6,21 +6,21 @@ from qboost.keys import QBoostKeyPair, QBoostPublicKey
 from qboost.utils import QBoostError
 
 
-def test_generate_keypair():
+def test_keygen():
     kp = QBoostKeyPair.generate()
     assert isinstance(kp, QBoostKeyPair)
     assert kp.hybrid is not None
     assert kp.created_at > 0
 
 
-def test_key_id_is_hex_string():
+def test_key_id():
     kp = QBoostKeyPair.generate()
     assert isinstance(kp.key_id, str)
     int(kp.key_id, 16)
     assert len(kp.key_id) == 32  # 16 bytes -> 32 hex chars
 
 
-def test_export_public_key_import_roundtrip():
+def test_pub_export():
     kp = QBoostKeyPair.generate()
     exported = kp.export_public_key()
     assert exported.startswith(b"QBOOST-PUB-V1\n")
@@ -29,7 +29,7 @@ def test_export_public_key_import_roundtrip():
     assert imported.serialize() == kp.public_key.serialize()
 
 
-def test_export_private_key_import_roundtrip_no_password():
+def test_priv_export():
     kp = QBoostKeyPair.generate()
     exported = kp.export_private_key()
     assert exported.startswith(b"QBOOST-SEC-V1\n")
@@ -40,7 +40,7 @@ def test_export_private_key_import_roundtrip_no_password():
     assert imported.hybrid.private_key.serialize() == kp.hybrid.private_key.serialize()
 
 
-def test_export_private_key_import_roundtrip_with_password():
+def test_priv_export_encrypted():
     kp = QBoostKeyPair.generate()
     password = "super-secret-pass"
     exported = kp.export_private_key(password=password)
@@ -52,21 +52,21 @@ def test_export_private_key_import_roundtrip_with_password():
     assert imported.hybrid.private_key.serialize() == kp.hybrid.private_key.serialize()
 
 
-def test_wrong_password_raises():
+def test_wrong_pw():
     kp = QBoostKeyPair.generate()
     exported = kp.export_private_key(password="correct")
     with pytest.raises((QBoostError, Exception)):
         QBoostKeyPair.from_private_key(exported, password="wrong")
 
 
-def test_encrypted_key_requires_password():
+def test_missing_pw():
     kp = QBoostKeyPair.generate()
     exported = kp.export_private_key(password="pass")
     with pytest.raises(QBoostError, match="Password required"):
         QBoostKeyPair.from_private_key(exported, password=None)
 
 
-def test_public_key_deserialize_roundtrip():
+def test_pub_serde():
     kp = QBoostKeyPair.generate()
     pub = kp.public_key
     serialized = pub.serialize()
@@ -74,7 +74,7 @@ def test_public_key_deserialize_roundtrip():
     assert restored.serialize() == serialized
 
 
-def test_key_id_deterministic():
+def test_key_id_stable():
     kp = QBoostKeyPair.generate()
     pub = kp.public_key
     assert pub.key_id == kp.key_id

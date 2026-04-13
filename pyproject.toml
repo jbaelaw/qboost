@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "qboost"
-version = "0.1.0"
+version = "0.7.0"
 description = "Quantum-Boost Encryption Toolkit - Hybrid classical + post-quantum cryptography"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.9"
-authors = [{ name = "QBoost Contributors" }]
-keywords = ["cryptography", "quantum", "post-quantum", "encryption", "hybrid", "kem"]
+authors = [{ name = "Team JRTI" }]
+keywords = ["post-quantum", "hybrid-encryption"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -28,9 +28,9 @@ pq = ["oqs"]
 dev = ["pytest>=7.0", "pytest-cov"]
 
 [project.urls]
-Homepage = "https://github.com/baejiho/qboost"
-Repository = "https://github.com/baejiho/qboost"
-Issues = "https://github.com/baejiho/qboost/issues"
+Homepage = "https://github.com/jbaelaw/qboost"
+Repository = "https://github.com/jbaelaw/qboost"
+Issues = "https://github.com/jbaelaw/qboost/issues"
 
 [tool.setuptools.packages.find]
 include = ["qboost*"]

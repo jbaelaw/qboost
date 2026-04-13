@@ -1,10 +1,3 @@
-"""Encrypt and decrypt files using QBoost symmetric encryption.
-
-Usage:
-    python file_encryption.py encrypt <input> <output> --password <pw>
-    python file_encryption.py decrypt <input> <output> --password <pw>
-"""
-
 import argparse
 import sys
 from pathlib import Path
