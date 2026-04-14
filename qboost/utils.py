@@ -3,7 +3,7 @@ from __future__ import annotations
 import hashlib
 import os
 
-VERSION = "0.8.0"
+VERSION = "0.8.5"
 
 try:
     import oqs  # noqa: F401
@@ -11,9 +11,8 @@ try:
 except ImportError:
     PQ_AVAILABLE = False
 
-
-def check_pq() -> bool:
-    return PQ_AVAILABLE
+MODE_CLASSICAL: int = 0x01
+MODE_HYBRID: int = 0x02
 
 
 def quantum_random(n: int) -> bytes:

@@ -91,7 +91,9 @@ def test_large():
 def test_mode_byte():
     kp = HybridSigner.generate_keypair()
     sig = HybridSigner.sign(b"test", kp.private_key)
-    assert sig[0] == 0x01 or sig[0] == 0x02
+    from qboost.utils import MODE_CLASSICAL as _MC, MODE_HYBRID as _MH, PQ_AVAILABLE
+    expected = _MH if PQ_AVAILABLE else _MC
+    assert sig[0] == expected
 
 
 def test_truncated():
@@ -107,13 +109,20 @@ def test_different_sigs():
 
 
 def test_downgrade_rejected():
-    """Classical-mode signature must be rejected if public key has PQ data."""
-    kp = HybridSigner.generate_keypair()
+    """A classical-mode signature against a key with PQ data must be rejected."""
+    from qboost.utils import MODE_CLASSICAL as _MODE_CLASSICAL
+    from cryptography.hazmat.primitives.asymmetric.ed25519 import Ed25519PrivateKey
+
+    ed_priv = Ed25519PrivateKey.generate()
+    ed_pub = ed_priv.public_key()
+
     msg = b"downgrade test"
-    sig = HybridSigner.sign(msg, kp.private_key)
-    forged = bytes([MODE_CLASSICAL]) + sig[1:1 + _ED25519_SIG_LEN]
-    pub = kp.public_key
-    if pub.pq_public is not None:
-        assert not HybridSigner.verify(msg, forged, pub)
-    else:
-        assert HybridSigner.verify(msg, forged, pub)
+    bound_msg = bytes([_MODE_CLASSICAL]) + msg
+    ed_sig = ed_priv.sign(bound_msg)
+    classical_sig = bytes([_MODE_CLASSICAL]) + ed_sig
+
+    classical_pub = SigningPublicKey(ed_pub, pq_public=None)
+    assert HybridSigner.verify(msg, classical_sig, classical_pub)
+
+    hybrid_pub = SigningPublicKey(ed_pub, pq_public=b"fake_pq_data")
+    assert not HybridSigner.verify(msg, classical_sig, hybrid_pub)

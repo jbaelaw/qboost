@@ -1,5 +1,6 @@
 import argparse
 import sys
+from getpass import getpass
 from pathlib import Path
 
 import qboost
@@ -33,17 +34,19 @@ def main():
     parser.add_argument("action", choices=["encrypt", "decrypt"])
     parser.add_argument("input", type=Path, help="Input file path")
     parser.add_argument("output", type=Path, help="Output file path")
-    parser.add_argument("--password", required=True, help="Encryption password")
+    parser.add_argument("--password", default=None, help="Password (omit to prompt securely)")
     args = parser.parse_args()
 
     if not args.input.exists():
         print(f"Error: {args.input} not found.", file=sys.stderr)
         sys.exit(1)
 
+    password = args.password or getpass("Password: ")
+
     if args.action == "encrypt":
-        encrypt_file(args.input, args.output, args.password)
+        encrypt_file(args.input, args.output, password)
     else:
-        decrypt_file(args.input, args.output, args.password)
+        decrypt_file(args.input, args.output, password)
 
 
 if __name__ == "__main__":

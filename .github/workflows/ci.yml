@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ["3.9", "3.10", "3.11", "3.12"]
+        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
 
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +30,7 @@ jobs:
         run: pytest --cov=qboost --cov-report=term-missing
 
       - name: Upload coverage
-        if: matrix.python-version == '3.12'
+        if: matrix.python-version == '3.13'
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report

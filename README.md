@@ -166,7 +166,7 @@ qboost.info()              # dict with algorithm details
 
 ```python
 {
-    "version": "0.8.0",
+    "version": "0.8.5",
     "pq_available": True,
     "classical_kem": "X25519",
     "pq_kem": "ML-KEM-768",       # or "N/A (hash-enhanced)" without oqs
@@ -216,13 +216,13 @@ In classical mode, 32 bytes of random entropy are encrypted under a separate HKD
 |---|---|
 | `HybridSigner` | `.generate_keypair() -> SigningKeyPair`, `.sign(msg, priv) -> bytes`, `.verify(msg, sig, pub) -> bool` |
 
-All methods are static. In hybrid mode, both Ed25519 and ML-DSA-65 signatures are produced and concatenated. Verification requires both signatures to be valid. A classical-mode signature is rejected if the public key is a hybrid key, preventing downgrade attacks.
+All methods are static. In hybrid mode, both Ed25519 and ML-DSA-65 signatures are produced and concatenated. Verification requires both signatures to be valid. A classical-mode signature is rejected if the public key is a hybrid key, preventing downgrade attacks. Signatures bind the mode byte to the message before signing, preventing signature stripping.
 
 ### Symmetric Utilities
 
 | Function | Parameters | Returns | Description |
 |---|---|---|---|
-| `derive_key(password, salt=None, key_length=32)` | `str`, `bytes \| None`, `int` | `tuple[bytes, bytes]` | Scrypt + SHAKE256 key derivation; returns `(key, salt)` |
+| `derive_key(password, salt=None, key_length=32)` | `str`, `bytes \| None`, `int` | `tuple[bytes, bytes]` | Scrypt + SHAKE256 key derivation; returns `(key, salt)`. Validates `key_length > 0` |
 | `encrypt_with_key(pt, key)` | `bytes`, `bytes` | `bytes` | AES-256-GCM encryption with a 32-byte key |
 | `decrypt_with_key(ct, key)` | `bytes`, `bytes` | `bytes` | AES-256-GCM decryption with a 32-byte key |
 
@@ -232,13 +232,15 @@ All methods are static. In hybrid mode, both Ed25519 and ML-DSA-65 signatures ar
 
 | Exception | Parent | Description |
 |---|---|---|
-| `QBoostError` | `Exception` | Base exception for all QBoost errors |
+| `QBoostError` | `Exception` | Base exception for all QBoost errors (also raised for invalid key lengths, configuration errors) |
 | `DecryptionError` | `QBoostError` | Raised on decryption or verification failure |
 
 ## Security Considerations
 
 - The hybrid design ensures security if **either** the classical or post-quantum component remains unbroken.
 - Signature verification rejects classical-mode signatures against hybrid public keys to prevent downgrade attacks.
+- Signatures bind the mode byte into the signed message (`mode || message`), preventing signature stripping attacks where an attacker removes the PQ component.
+- Encapsulation and signing with hybrid keys fail explicitly when the `oqs` library is unavailable, preventing silent security downgrades.
 - HKDF derivations use distinct domain-separation strings (`qboost-hybrid-kem-v1` for shared secret derivation, `qboost-entropy-wrap-v1` for entropy wrapping) to prevent cross-protocol attacks.
 - AES-256-GCM provides 128-bit post-quantum security (Grover's algorithm halves the effective key length).
 - Scrypt with memory-hard parameters (n=2^16, r=8, p=1) followed by SHAKE256 post-mixing resists GPU/ASIC brute force and preimage attacks on the KDF output.

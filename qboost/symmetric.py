@@ -3,7 +3,7 @@ from __future__ import annotations
 from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 from cryptography.hazmat.primitives.kdf.scrypt import Scrypt
 
-from .utils import DecryptionError, quantum_random, shake256
+from .utils import DecryptionError, QBoostError, quantum_random, shake256
 
 _SALT_LEN = 32
 _NONCE_LEN = 12
@@ -15,6 +15,8 @@ def derive_key(
     salt: bytes | None = None,
     key_length: int = _KEY_LEN,
 ) -> tuple[bytes, bytes]:
+    if key_length < 1:
+        raise QBoostError("key_length must be positive")
     if salt is None:
         salt = quantum_random(_SALT_LEN)
 
@@ -50,7 +52,7 @@ def decrypt(ciphertext: bytes, password: str) -> bytes:
 
 def encrypt_with_key(plaintext: bytes, key: bytes) -> bytes:
     if len(key) != _KEY_LEN:
-        raise ValueError(f"Key must be {_KEY_LEN} bytes")
+        raise QBoostError(f"Key must be {_KEY_LEN} bytes, got {len(key)}")
     nonce = quantum_random(_NONCE_LEN)
     ciphertext = AESGCM(key).encrypt(nonce, plaintext, None)
     return nonce + ciphertext
@@ -58,7 +60,7 @@ def encrypt_with_key(plaintext: bytes, key: bytes) -> bytes:
 
 def decrypt_with_key(ciphertext: bytes, key: bytes) -> bytes:
     if len(key) != _KEY_LEN:
-        raise ValueError(f"Key must be {_KEY_LEN} bytes")
+        raise QBoostError(f"Key must be {_KEY_LEN} bytes, got {len(key)}")
 
     min_len = _NONCE_LEN + 16
     if len(ciphertext) < min_len:

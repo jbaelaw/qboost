@@ -103,6 +103,8 @@ class QBoostKeyPair:
         if len(raw) < 2:
             raise QBoostError("Invalid private key data")
         priv_len = struct.unpack(">H", raw[:2])[0]
+        if 2 + priv_len > len(raw):
+            raise QBoostError("Truncated private key export data")
         priv_raw = raw[2:2 + priv_len]
         pub_raw = raw[2 + priv_len:]
 

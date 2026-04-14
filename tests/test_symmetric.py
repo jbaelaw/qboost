@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from qboost.symmetric import decrypt, decrypt_with_key, derive_key, encrypt, encrypt_with_key
-from qboost.utils import DecryptionError, quantum_random
+from qboost.utils import DecryptionError, QBoostError, quantum_random
 
 
 def test_derive_key():
@@ -110,15 +110,26 @@ def test_tamper_key():
 
 
 def test_bad_key_len_enc():
-    with pytest.raises(ValueError):
+    with pytest.raises(QBoostError):
         encrypt_with_key(b"data", b"short")
 
 
 def test_bad_key_len_dec():
-    with pytest.raises(ValueError):
+    with pytest.raises(QBoostError):
         decrypt_with_key(b"data" * 10, b"short")
 
 
 def test_short_ct():
     with pytest.raises(DecryptionError):
         decrypt(b"short", "password")
+
+
+def test_short_ct_key():
+    key = quantum_random(32)
+    with pytest.raises(DecryptionError):
+        decrypt_with_key(b"short", key)
+
+
+def test_derive_key_zero_len():
+    with pytest.raises(QBoostError):
+        derive_key("password", key_length=0)

@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.serialization import (
     PublicFormat,
 )
 
-from .utils import QBoostError
+from .utils import MODE_CLASSICAL, MODE_HYBRID, QBoostError
 
 try:
     import oqs
@@ -28,9 +28,6 @@ try:
 except ImportError:
     oqs = None  # type: ignore[assignment]
     _PQ_SIG_ALG = None
-
-MODE_CLASSICAL: int = 0x01
-MODE_HYBRID: int = 0x02
 
 _ED25519_PUB_LEN = 32
 _ED25519_PRIV_LEN = 32
@@ -168,18 +165,20 @@ class HybridSigner:
     @staticmethod
     def sign(message: bytes, private_key: SigningPrivateKey) -> bytes:
         """Format: [mode:1][ed25519_sig:64][pq_sig_if_hybrid]"""
-        ed_sig = private_key.classical_private.sign(message)
+        has_pq = private_key.pq_private is not None
+        if has_pq and (oqs is None or _PQ_SIG_ALG is None):
+            raise QBoostError("Hybrid private key requires oqs library for signing")
 
-        if (
-            private_key.pq_private is not None
-            and oqs is not None
-            and _PQ_SIG_ALG is not None
-        ):
+        mode = MODE_HYBRID if has_pq else MODE_CLASSICAL
+        bound_msg = bytes([mode]) + message
+        ed_sig = private_key.classical_private.sign(bound_msg)
+
+        if has_pq:
             sig = oqs.Signature(_PQ_SIG_ALG, secret_key=private_key.pq_private)
-            pq_sig = sig.sign(message)
-            return bytes([MODE_HYBRID]) + ed_sig + pq_sig
+            pq_sig = sig.sign(bound_msg)
+            return bytes([mode]) + ed_sig + pq_sig
 
-        return bytes([MODE_CLASSICAL]) + ed_sig
+        return bytes([mode]) + ed_sig
 
     @staticmethod
     def verify(
@@ -190,11 +189,16 @@ class HybridSigner:
 
         mode = signature[0]
         ed_sig = signature[1 : 1 + _ED25519_SIG_LEN]
+        bound_msg = bytes([mode]) + message
 
-        try:
-            public_key.classical_public.verify(ed_sig, message)
-        except Exception:
+        if mode == MODE_CLASSICAL and public_key.pq_public is not None:
             return False
+
+        ed_valid = True
+        try:
+            public_key.classical_public.verify(ed_sig, bound_msg)
+        except Exception:
+            ed_valid = False
 
         if mode == MODE_HYBRID:
             pq_sig = signature[1 + _ED25519_SIG_LEN :]
@@ -206,14 +210,12 @@ class HybridSigner:
                 or _PQ_SIG_ALG is None
             ):
                 return False
+            pq_valid = False
             try:
                 verifier = oqs.Signature(_PQ_SIG_ALG)
-                valid = verifier.verify(message, pq_sig, public_key.pq_public)
-                return bool(valid)
+                pq_valid = bool(verifier.verify(bound_msg, pq_sig, public_key.pq_public))
             except Exception:
-                return False
+                pq_valid = False
+            return ed_valid and pq_valid
 
-        if mode == MODE_CLASSICAL and public_key.pq_public is not None:
-            return False
-
-        return mode == MODE_CLASSICAL
+        return ed_valid and mode == MODE_CLASSICAL

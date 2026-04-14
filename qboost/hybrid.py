@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import os
 import struct
 
 from cryptography.hazmat.primitives.asymmetric.x25519 import (
@@ -17,7 +16,7 @@ from cryptography.hazmat.primitives.serialization import (
 )
 
 from .symmetric import decrypt_with_key, encrypt_with_key
-from .utils import PQ_AVAILABLE, QBoostError, quantum_random
+from .utils import MODE_CLASSICAL, MODE_HYBRID, PQ_AVAILABLE, QBoostError, quantum_random
 
 try:
     import oqs
@@ -32,9 +31,6 @@ try:
 except ImportError:
     oqs = None  # type: ignore[assignment]
     _PQ_KEM_ALG = None
-
-MODE_CLASSICAL: int = 0x01
-MODE_HYBRID: int = 0x02
 
 _HKDF_INFO = b"qboost-hybrid-kem-v1"
 _HKDF_ENTROPY_INFO = b"qboost-entropy-wrap-v1"
@@ -199,6 +195,9 @@ class HybridKEM:
             Encoding.Raw, PublicFormat.Raw
         )
 
+        if public_key.pq_public is not None and (oqs is None or _PQ_KEM_ALG is None):
+            raise QBoostError("Hybrid public key requires oqs library for encapsulation")
+
         if (
             public_key.pq_public is not None
             and oqs is not None
@@ -210,7 +209,7 @@ class HybridKEM:
             shared_secret = _hkdf_derive(classical_secret + pq_secret)
             ct = bytes([MODE_HYBRID]) + ephemeral_pub_bytes + pq_ct
         else:
-            extra_entropy = os.urandom(32)
+            extra_entropy = quantum_random(32)
             classical_key = _hkdf_entropy_key(classical_secret)
             encrypted_entropy = encrypt_with_key(extra_entropy, classical_key)
 

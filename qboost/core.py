@@ -29,6 +29,8 @@ def encrypt(
         pub = recipient_public_key
 
     shared_secret, kem_ct = HybridKEM.encapsulate(pub.hybrid_public)
+    if len(kem_ct) > 0xFFFF:
+        raise QBoostError("KEM ciphertext exceeds maximum frame size")
     encrypted = encrypt_with_key(plaintext, shared_secret)
 
     kem_ct_len = len(kem_ct).to_bytes(2, "big")
@@ -62,8 +64,13 @@ def decrypt(
     else:
         hybrid_priv = private_key
 
-    shared_secret = HybridKEM.decapsulate(kem_ct, hybrid_priv)
-    return decrypt_with_key(encrypted, shared_secret)
+    try:
+        shared_secret = HybridKEM.decapsulate(kem_ct, hybrid_priv)
+        return decrypt_with_key(encrypted, shared_secret)
+    except DecryptionError:
+        raise
+    except Exception as e:
+        raise DecryptionError("Decryption failed") from e
 
 
 def encrypt_symmetric(plaintext: bytes, password: str) -> bytes:

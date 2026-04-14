@@ -12,7 +12,7 @@ from qboost.core import (
     is_quantum_ready,
 )
 from qboost.keys import QBoostKeyPair, QBoostPublicKey
-from qboost.utils import DecryptionError, quantum_random
+from qboost.utils import DecryptionError, QBoostError, quantum_random
 
 
 def test_keygen():
@@ -60,8 +60,8 @@ def test_symmetric():
 
 
 def test_pq_ready():
-    result = is_quantum_ready()
-    assert isinstance(result, bool)
+    from qboost.utils import PQ_AVAILABLE
+    assert is_quantum_ready() == PQ_AVAILABLE
 
 
 def test_info():
@@ -85,7 +85,7 @@ def test_wrong_key():
     kp2 = generate_keypair()
     plaintext = b"should not decrypt with wrong key"
     ct = encrypt(plaintext, kp1.public_key)
-    with pytest.raises((DecryptionError, Exception)):
+    with pytest.raises(DecryptionError):
         decrypt(ct, kp2)
 
 
@@ -133,3 +133,21 @@ def test_symmetric_type_error():
         encrypt_symmetric("not bytes", "pw")
     with pytest.raises(TypeError):
         decrypt_symmetric("not bytes", "pw")
+
+
+def test_decrypt_with_hybrid_priv():
+    kp = generate_keypair()
+    ct = encrypt(b"hybrid priv test", kp.public_key)
+    from qboost.hybrid import HybridKEM
+    pt = decrypt(ct, kp.hybrid.private_key)
+    assert pt == b"hybrid priv test"
+
+
+def test_qboosterror_wrapped():
+    """Corrupt KEM payload should raise DecryptionError, not QBoostError."""
+    kp = generate_keypair()
+    magic = b"QB1"
+    fake_kem = bytes([0xFF]) + b'\x00' * 32 + b'\x00' * 50
+    fake_ct = magic + len(fake_kem).to_bytes(2, 'big') + fake_kem + b'\x00' * 60
+    with pytest.raises(DecryptionError):
+        decrypt(fake_ct, kp)

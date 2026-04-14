@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from qboost.keys import QBoostKeyPair, QBoostPublicKey
-from qboost.utils import QBoostError
+from qboost.utils import DecryptionError, QBoostError
 
 
 def test_keygen():
@@ -55,7 +55,7 @@ def test_priv_export_encrypted():
 def test_wrong_pw():
     kp = QBoostKeyPair.generate()
     exported = kp.export_private_key(password="correct")
-    with pytest.raises((QBoostError, Exception)):
+    with pytest.raises(DecryptionError):
         QBoostKeyPair.from_private_key(exported, password="wrong")
 
 

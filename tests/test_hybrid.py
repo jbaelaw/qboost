@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import pytest
+
 from qboost.hybrid import HybridKEM, HybridPrivateKey, HybridPublicKey
+from qboost.utils import DecryptionError, QBoostError
 
 
 def test_keygen():
@@ -58,12 +61,11 @@ def test_priv_serialize():
 def test_wrong_key():
     kp1 = HybridKEM.generate_keypair()
     kp2 = HybridKEM.generate_keypair()
-
     shared_secret, ct = HybridKEM.encapsulate(kp1.public_key)
     try:
         recovered = HybridKEM.decapsulate(ct, kp2.private_key)
         assert recovered != shared_secret
-    except Exception:
+    except (QBoostError, DecryptionError):
         pass
 
 
@@ -78,3 +80,20 @@ def test_repr():
     assert "HybridPublicKey" in repr(kp.public_key)
     assert "HybridPrivateKey" in repr(kp.private_key)
     assert "classical" in repr(kp.public_key) or "hybrid" in repr(kp.public_key)
+
+
+def test_pub_deserialize_too_short():
+    with pytest.raises(QBoostError):
+        HybridPublicKey.deserialize(b"\x01")
+
+
+def test_pub_deserialize_bad_mode():
+    from qboost.utils import MODE_CLASSICAL
+    data = bytes([0xFF]) + b'\x00' * 32
+    with pytest.raises(QBoostError):
+        HybridPublicKey.deserialize(data)
+
+
+def test_priv_deserialize_too_short():
+    with pytest.raises(QBoostError):
+        HybridPrivateKey.deserialize(b"\x01")

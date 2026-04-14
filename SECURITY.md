@@ -36,5 +36,5 @@ or the post-quantum primitive remains secure.
 
 | Version | Status |
 |---|---|
-| 0.8.x | Current |
-| < 0.8 | Unsupported |
+| 0.8.5+ | Current |
+| < 0.8.5 | Unsupported |
